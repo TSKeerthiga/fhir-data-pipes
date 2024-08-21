@@ -274,4 +274,29 @@ public interface FhirEtlOptions extends BasePipelineOptions {
   String getSourceNdjsonFilePatternList();
 
   void setSourceNdjsonFilePatternList(String value);
+
+  @Description("SMTP Email From User")
+  @Default.String("")
+  String getSmptEmailFromUser();
+
+  void setSmptEmailFromUser(String value);
+
+  @Description("SMTP Email To User")
+  @Default.String("")
+  String getSmptEmailToUser();
+
+  void setSmptEmailToUser(String value);
+
+  @Description("SMTP Email Subject")
+  @Default.String("")
+  String getSmptEmailSubject();
+
+  void setSmptEmailSubject(String value);
+
+  @Description("SMTP Email Body")
+  @Default.String("")
+  String getSmptEmailBody();
+
+  void setSmptEmailBody(String value);
+
 }

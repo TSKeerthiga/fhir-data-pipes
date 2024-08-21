@@ -122,6 +122,16 @@ public class DataProperties {
 
   private int recursiveDepth;
 
+  public boolean smptEmailValidate;
+
+  public String smptEmailFromUser;
+
+  public String smptEmailToUser;
+
+  public String smptEmailSubject;
+
+  public String smptEmailBody;
+
   @PostConstruct
   void validateProperties() {
     CronExpression.parse(incrementalSchedule);
@@ -209,6 +219,14 @@ public class DataProperties {
       options.setFhirSinkPath(sinkFhirServerUrl);
       options.setSinkUserName(Strings.nullToEmpty(sinkUserName));
       options.setSinkPassword(Strings.nullToEmpty(sinkPassword));
+    }
+
+    if (smptEmailValidate) {
+//      options.setSmptEmailValidate(Boolean.valueOf(smptEmailValidate));
+      options.setSmptEmailFromUser(Strings.nullToEmpty(smptEmailFromUser));
+      options.setSmptEmailToUser(Strings.nullToEmpty(smptEmailToUser));
+      options.setSmptEmailSubject(Strings.nullToEmpty(smptEmailSubject));
+      options.setSmptEmailBody(Strings.nullToEmpty(smptEmailBody));
     }
 
     // Using underscore for suffix as hyphens are discouraged in hive table names.
@@ -304,6 +322,10 @@ public class DataProperties {
     }
     sortConfigList(pipelineConfigs);
     return pipelineConfigs;
+  }
+
+  public boolean getSmptEmailValidate() {
+    return smptEmailValidate;
   }
 
   @Getter

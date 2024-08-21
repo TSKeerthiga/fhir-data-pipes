@@ -25,8 +25,8 @@ fhirdata:
   # fhirServerUrl: "http://172.17.0.1:8091/fhir"
   # fhirServerUrl: "http://hapi-server:8080/fhir"
   dbConfig: "config/hapi-postgres-config_local.json"
-  dwhRootPrefix: "/dwh/controller_DWH"
-  incrementalSchedule: "0 0 * * * *"
+  dwhRootPrefix: "/dwh/controller_DWH_test"
+  incrementalSchedule: "1 * * * * *"
   purgeSchedule: "0 30 * * * *"
   numOfDwhSnapshotsToRetain: 2
   # There is no Questionnaire in our test FHIR server, but it is added to
@@ -37,7 +37,7 @@ fhirdata:
   autoGenerateFlinkConfiguration: true
   createHiveResourceTables: true
   thriftserverHiveConfig: "config/thriftserver-hive-config_local.json"
-  hiveResourceViewsDir: "config/views"
+  hiveResourceViewsDir: ""
   # structureDefinitionsPath: "config/profile-definitions"
   structureDefinitionsPath: "classpath:/r4-us-core-definitions"
   fhirVersion: "R4"
@@ -48,6 +48,11 @@ fhirdata:
   #sinkUserName: "hapi"
   #sinkPassword: "hapi123"
   recursiveDepth: 1
+  smptEmailValidate: false # this flag is true then mail process will work when error handling for full and incremental pipeline
+  smptEmailFromUser: "" #from user
+  smptEmailToUser: "" #To user
+  smptEmailSubject: "" #email subject
+  smptEmailBody: "" #email body
 
 # Enable spring boot actuator end points, use "*" to expose all endpoints, or a comma-separated
 # list to expose selected ones
@@ -56,3 +61,15 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus,pipeline-metrics
+
+spring:
+  mail:
+    host: smtp.gmail.com           # Your SMTP server address
+    port: 587                        # SMTP port (587 for TLS, 465 for SSL)
+    username:           # Your email username
+    password:           # Your email password
+    properties:
+      mail.smtp.auth: true           # Enable SMTP authentication
+      mail.smtp.starttls.enable: true # Enable STARTTLS
+      mail.smtp.ssl.trust: smtp.gmail.com # Trust the SMTP server
+      mail.debug: true

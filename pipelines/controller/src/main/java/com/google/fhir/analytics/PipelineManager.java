@@ -23,17 +23,19 @@ import com.google.fhir.analytics.metrics.CumulativeMetrics;
 import com.google.fhir.analytics.metrics.PipelineMetrics;
 import com.google.fhir.analytics.metrics.PipelineMetricsProvider;
 import com.google.fhir.analytics.model.DatabaseConfiguration;
+import com.google.fhir.analytics.service.EmailService;
 import com.google.fhir.analytics.view.ViewDefinitionException;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import lombok.Data;
@@ -78,6 +80,8 @@ public class PipelineManager implements ApplicationListener<ApplicationReadyEven
   @Autowired private DwhFilesManager dwhFilesManager;
 
   @Autowired private MeterRegistry meterRegistry;
+
+  @Autowired private EmailService emailService;
 
   private HiveTableManager hiveTableManager;
 
@@ -729,6 +733,12 @@ public class PipelineManager implements ApplicationListener<ApplicationReadyEven
         DwhFiles.forRoot(dwhRoot, fhirContext)
             .overwriteFile(ERROR_FILE_NAME, stackTrace.getBytes(StandardCharsets.UTF_8));
       }
+      String inc_path = dwhRoot + "/" + ERROR_FILE_NAME;
+
+      if (dataProperties.getSmptEmailValidate()) {
+        String S3Validate = splitURL(inc_path);
+        sendEmailWithAttachment(inc_path, S3Validate.equals("s3:") ? "aws" : "");
+      }
     } catch (IOException ex) {
       logger.error("Error while capturing error to a file", ex);
     }
@@ -758,6 +768,43 @@ public class PipelineManager implements ApplicationListener<ApplicationReadyEven
       logger.error("Error while updating last run details", e);
       throw new RuntimeException(e);
     }
+  }
+
+
+  public String sendEmailWithAttachment(String path, String source) throws IOException {
+    boolean result;
+    Map<String, String> EmailInfo = new HashMap<>();
+    EmailInfo.put("FromUser", dataProperties.getSmptEmailFromUser());
+    EmailInfo.put("ToUser", dataProperties.getSmptEmailToUser());
+    EmailInfo.put("Subject", dataProperties.getSmptEmailSubject());
+    EmailInfo.put("Body", dataProperties.getSmptEmailBody());
+
+    if (source == "aws") {
+      if (path.contains("//error.log")) {
+        path = path.replace("//error.log", "/error.log");
+      }
+      ResourceId resourceId = FileSystems.matchNewResource(path, false);
+      ReadableByteChannel channel = FileSystems.open(resourceId);
+      InputStream stream = Channels.newInputStream(channel);
+      result = emailService.sendEmailWithAttachmentS3Api(EmailInfo, stream);
+    } else {
+      result = emailService.sendMailWithAttachment(EmailInfo, path, source);
+    }
+
+    if (result) {
+      logger.info("Received request to start the pipeline - api controller send-email try...");
+
+      return "Email sent successfully!";
+    } else {
+      logger.info("Received request to start the pipeline - api controller send-email catch...");
+
+      return "Failed to send email. Please try again later.";
+    }
+  }
+
+  public String splitURL(String url) {
+    String[] arrOfStr = url.split("//", 2);
+    return arrOfStr[0];
   }
 
   public enum LastRunStatus {
